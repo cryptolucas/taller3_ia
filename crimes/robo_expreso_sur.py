@@ -35,9 +35,83 @@ def crear_kb() -> KnowledgeBase:
     estuche_joyas  = Term("estuche_joyas")
     vagon_equipaje = Term("vagon_equipaje")
 
-    # === YOUR CODE HERE ===
+    # =========================
+    # HECHOS
+    # =========================
+    
+    # Elena estaba en la escena del crimen
+    kb.add_fact(Predicate("estaba_en_escena", (elena,)))
+    kb.add_fact(Predicate("huellas_en", (elena, estuche_joyas)))
+    
+    # Don Rodrigo grabado en cámara en lugar lejano
+    kb.add_fact(Predicate("grabado_en_camara", (don_rodrigo, vagon_equipaje)))
+    kb.add_fact(Predicate("ubicacion_opuesta", (vagon_equipaje,)))
+    
+    # La Marquesa es la víctima y presenció el incidente
+    kb.add_fact(Predicate("victima", (marquesa,)))
+    kb.add_fact(Predicate("presencio", (marquesa,)))
+    
+    # Acusación de la Marquesa
+    kb.add_fact(Predicate("acusa", (marquesa, elena)))
+    
+    # Coartadas mutuas entre Elena y Victor
+    kb.add_fact(Predicate("coartada", (victor, elena)))
+    kb.add_fact(Predicate("coartada", (elena, victor)))
 
-    # === END YOUR CODE ===
+    # =========================
+    # REGLAS
+    # =========================
+    
+    # 1. Grabado en cámara en ubicación opuesta → descartado
+    kb.add_rule(Rule(
+        head=Predicate("descartado", (Term("$X"),)),
+        body=(
+            Predicate("grabado_en_camara", (Term("$X"), Term("$Y"))),
+            Predicate("ubicacion_opuesta", (Term("$Y"),))
+        )
+    ))
+    
+    # 2. Víctima es testigo imparcial
+    kb.add_rule(Rule(
+        head=Predicate("testigo_imparcial", (Term("$X"),)),
+        body=(Predicate("victima", (Term("$X"),)),)
+    ))
+    
+    # 3. Acusación de testigo imparcial es creíble
+    kb.add_rule(Rule(
+        head=Predicate("acusacion_creible", (Term("$X"), Term("$Y"))),
+        body=(
+            Predicate("testigo_imparcial", (Term("$X"),)),
+            Predicate("acusa", (Term("$X"), Term("$Y")))
+        )
+    ))
+    
+    # 4. En la escena + acusado de forma creíble → culpable
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(
+            Predicate("estaba_en_escena", (Term("$X"),)),
+            Predicate("acusacion_creible", (Term("$Y"), Term("$X")))
+        )
+    ))
+    
+    # 5. Da coartada a culpable → defendiendo al culpable
+    kb.add_rule(Rule(
+        head=Predicate("defiende_al_culpable", (Term("$X"),)),
+        body=(
+            Predicate("coartada", (Term("$X"), Term("$Y"))),
+            Predicate("culpable", (Term("$Y"),))
+        )
+    ))
+    
+    # 6. Coartadas mutuas → alianza de coartadas
+    kb.add_rule(Rule(
+        head=Predicate("alianza_coartadas", (Term("$X"), Term("$Y"))),
+        body=(
+            Predicate("coartada", (Term("$X"), Term("$Y"))),
+            Predicate("coartada", (Term("$Y"), Term("$X")))
+        )
+    ))
 
     return kb
 

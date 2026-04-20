@@ -39,9 +39,99 @@ def crear_kb() -> KnowledgeBase:
     secretaria_luna   = Term("secretaria_luna")
     vaso_adulterado   = Term("vaso_adulterado")
 
-    # === YOUR CODE HERE ===
+    # =========================
+    # HECHOS
+    # =========================
+    
+    # Coartada verificada
+    kb.add_fact(Predicate("coartada_verificada", (enfermera_campos,)))
+    
+    # Herencia con testamento actual vs nuevo
+    kb.add_fact(Predicate("hereda_actual", (abogado_restrepo,)))
+    kb.add_fact(Predicate("pierde_con_cambio", (abogado_restrepo,)))
+    
+    kb.add_fact(Predicate("hereda_actual", (sobrino_esteban,)))
+    kb.add_fact(Predicate("pierde_con_cambio", (sobrino_esteban,)))
+    
+    kb.add_fact(Predicate("hereda_con_nuevo", (secretaria_luna,)))
+    
+    # Evidencia física
+    kb.add_fact(Predicate("huellas_en", (sobrino_esteban, vaso_adulterado)))
+    
+    # Falta de coartada verificada
+    kb.add_fact(Predicate("no_coartada_verificada", (abogado_restrepo,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (sobrino_esteban,)))
+    kb.add_fact(Predicate("no_coartada_verificada", (secretaria_luna,)))
+    
+    # Acusaciones
+    kb.add_fact(Predicate("acusa", (sobrino_esteban, secretaria_luna)))
+    kb.add_fact(Predicate("acusa", (abogado_restrepo, sobrino_esteban)))
+    
+    # Coartada
+    kb.add_fact(Predicate("coartada", (secretaria_luna, sobrino_esteban)))
 
-    # === END YOUR CODE ===
+    # =========================
+    # REGLAS
+    # =========================
+    
+    # 1. Coartada verificada → descartado
+    kb.add_rule(Rule(
+        head=Predicate("descartado", (Term("$X"),)),
+        body=(Predicate("coartada_verificada", (Term("$X"),)),)
+    ))
+    
+    # 2. Hereda actualmente Y pierde con cambio → motivo_doble
+    kb.add_rule(Rule(
+        head=Predicate("motivo_doble", (Term("$X"),)),
+        body=(
+            Predicate("hereda_actual", (Term("$X"),)),
+            Predicate("pierde_con_cambio", (Term("$X"),))
+        )
+    ))
+    
+    # 3. Huellas en objeto del crimen → evidencia_física
+    kb.add_rule(Rule(
+        head=Predicate("evidencia_fisica", (Term("$X"),)),
+        body=(Predicate("huellas_en", (Term("$X"), Term("$Y"))),)
+    ))
+    
+    # 4. Motivo doble + sin coartada + evidencia física → culpable
+    kb.add_rule(Rule(
+        head=Predicate("culpable", (Term("$X"),)),
+        body=(
+            Predicate("motivo_doble", (Term("$X"),)),
+            Predicate("no_coartada_verificada", (Term("$X"),)),
+            Predicate("evidencia_fisica", (Term("$X"),))
+        )
+    ))
+    
+    # 5. Culpable acusa a otro para desviar → desvío_sospechoso
+    kb.add_rule(Rule(
+        head=Predicate("desvio_sospechoso", (Term("$X"), Term("$Y"))),
+        body=(
+            Predicate("culpable", (Term("$X"),)),
+            Predicate("acusa", (Term("$X"), Term("$Y")))
+        )
+    ))
+    
+    # 6. Da coartada al culpable → encubridor
+    kb.add_rule(Rule(
+        head=Predicate("encubridor", (Term("$X"),)),
+        body=(
+            Predicate("coartada", (Term("$X"), Term("$Y"))),
+            Predicate("culpable", (Term("$Y"),))
+        )
+    ))
+    
+    # 7. Acusación corroborada: acusador tiene motivo doble Y acusado tiene evidencia física
+    kb.add_rule(Rule(
+        head=Predicate("acusacion_corroborada", (Term("$X"), Term("$Y"))),
+        body=(
+            Predicate("acusa", (Term("$X"), Term("$Y"))),
+            Predicate("motivo_doble", (Term("$X"),)),
+            Predicate("evidencia_fisica", (Term("$Y"),))
+        )
+    ))
 
     return kb
 
